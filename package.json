@@ -1,0 +1,21 @@
+{
+  "name": "gamma",
+  "version": "1.0.0",
+  "description": "Gamma Translator",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . Gamma --platform=win32 --arch=ia32 --icon=resources/gamma.png --prune=true --out=release-builds --version-string.CompanyName=GC --version-string.FileDescription=GC --version-string.ProductName='Gamma Translator'"
+  },
+  "keywords": [],
+  "author": "Guja Babunashvili <guja1501@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "archiver": "^3.1.1",
+    "electron": "^7.1.10",
+    "electron-packager": "^14.2.0",
+    "neat-csv": "^5.1.0",
+    "rimraf": "^3.0.1",
+    "unzipper": "^0.10.7"
+  }
+}
