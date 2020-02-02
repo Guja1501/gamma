@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Hello World!</title>
+    <title>Gamma Translator</title>
     <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
     <meta
       http-equiv="Content-Security-Policy"
@@ -202,6 +202,7 @@
           <ul>
             <li><a onclick="GoPage('index')">Main</a></li>
             <li><label>Change Words<input type="file" accept=".csv" class="change-words-input"></label></li>
+            <li><a onclick="downloadWords()">Download</a></li>
           </ul>
       </div>
     </div>
@@ -211,6 +212,7 @@
       const { ipcRenderer } = require('electron');
       const changeWordsInput = document.querySelector('.change-words-input');
       const confirmationButton = document.querySelector('.confirmation-button button');
+      const downloadWords = () => ipcRenderer.send('words-download');
       let lastSentFilePath = null;
 
       ipcRenderer.send('words-request');

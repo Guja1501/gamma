@@ -5,6 +5,16 @@ const unzipper = require('unzipper')
 const archiver = require('archiver')
 const rimraf = require('rimraf')
 const dictionaryLoader = require('./dictionary');
+const os = require('os');
+const getAppDataPath = require('appdata-path');
+
+const appdataPath = getAppDataPath('gamma');
+const tempFolder = os.tmpdir();
+
+// make sure appdata exists
+if (!fs.existsSync(appdataPath)) {
+  fs.mkdirSync(appdataPath);
+}
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -19,6 +29,8 @@ function createWindow() {
       nodeIntegration: true
     }
   });
+
+  win.setMenu(null);
 
   // and load the index.html of the app.
   win.loadFile("src/views/index.html");
@@ -71,7 +83,7 @@ ipcMain.on('go-page', (e, page) => {
 
 ipcMain.on('translate-file', (e, filePath) => {
   const filename = path.basename(filePath);
-  if(!filename.endsWith('.docx')) {
+  if (!filename.endsWith('.docx')) {
     // reply error
     console.error(`it's not .docx file`)
     return;
@@ -80,6 +92,7 @@ ipcMain.on('translate-file', (e, filePath) => {
   e.reply('progress-status', true);
 
   const ID = Math.random().toString(36).substr(2, 9);
+  const workingDir = path.join(appdataPath, ID)
 
   const stat = fs.statSync(filePath);
   let loaded = 0;
@@ -95,9 +108,9 @@ ipcMain.on('translate-file', (e, filePath) => {
         }
       })
     })
-    .pipe(unzipper.Extract({ path: __dirname + '/' + ID }))
+    .pipe(unzipper.Extract({ path: workingDir }))
     .on('close', async () => {
-      translateByID(ID, (from, to, index, length) => {
+      translate(workingDir, (from, to, index, length) => {
         e.reply('progress-change', {
           text: `Translating:<br/>${from}<br/>${to}`,
           progress: {
@@ -106,26 +119,30 @@ ipcMain.on('translate-file', (e, filePath) => {
           }
         })
       });
-      const tempName = ID + '.docx';
+      const tmpFilePath = path.join(appdataPath, ID + '.docx');
 
       e.reply('progress-change', {
         text: 'Generating DOCX',
         progress: '~'
       })
-      await zipDirectory(ID, tempName)
-      rimraf.sync(ID)
-      const saveToPath = dialog.showSaveDialogSync(win, {
-        defaultPath: filename
-      });
+      await zipDirectory(workingDir, tmpFilePath)
+      rimraf.sync(workingDir)
 
-      if(!saveToPath){
-        fs.unlinkSync(tempName)
+      const saveToPath = dialog.showSaveDialogSync(win, {
+        defaultPath: filename,
+        filters: [
+          { name: 'docx', extensions: [ 'docx' ]}
+        ]
+      })
+
+      if (!saveToPath) {
+        fs.unlinkSync(tmpFilePath)
       } else {
-        if(!saveToPath.endsWith('.docx')) {
+        if (!saveToPath.endsWith('.docx')) {
           saveToPath = saveToPath.trim('.') + '.docx';
         }
 
-        fs.renameSync(path.join(__dirname, tempName), saveToPath);
+        fs.renameSync(tmpFilePath, saveToPath);
       }
 
       e.reply('progress-status', false);
@@ -134,20 +151,20 @@ ipcMain.on('translate-file', (e, filePath) => {
 
 let TRANSLATIONS = {};
 
-dictionaryLoader().then(items => {
+dictionaryLoader(path.join(appdataPath, 'words.csv')).then(items => {
   TRANSLATIONS = TRANSLATIONS || {};
-  for(let item of items) {
+  for (let item of items) {
     TRANSLATIONS[item['FROM']] = item['TO'];
   }
 })
 
-function translateByID(ID, cb) {
-  const documentXmlPath = path.join(ID, 'word', 'document.xml');
+function translate(workingDir, cb) {
+  const documentXmlPath = path.join(workingDir, 'word', 'document.xml');
   const length = Object.keys(TRANSLATIONS).length;
   let response = fs.readFileSync(documentXmlPath);
   let content = response.toString();
   let i = 0;
-  for(let key in TRANSLATIONS) {
+  for (let key in TRANSLATIONS) {
     cb(key, TRANSLATIONS[key], ++i, length)
     content = content.replace(key, TRANSLATIONS[key])
   }
@@ -159,7 +176,7 @@ function zipDirectory(inputDir, outputFile) {
     zlib: { level: 9 },
   })
   archive.on('error', function (err) {
-      throw err
+    throw err
   })
 
   let output = fs.createWriteStream(outputFile)
@@ -173,16 +190,42 @@ ipcMain.on('words-request', e => e.reply('words-response', TRANSLATIONS));
 ipcMain.on('words-change', async (e, filePath) => {
   let items = await dictionaryLoader(filePath);
   let words = {};
-  
-  for(let item of items) {
+
+  for (let item of items) {
     words[item['FROM']] = item['TO'];
   }
-  
+
   e.reply('words-response', words, true);
 });
 
 ipcMain.on('words-save', (e, filePath) => {
-  let dictionaryCsvPath = path.join(__dirname, 'dictionary.csv');
-  fs.renameSync(dictionaryCsvPath, path.join(__dirname, Date.now() + '_dictionary.csv'));
-  fs.renameSync(filePath, dictionaryCsvPath);
+  let dictionaryCsvPath = path.join(appdataPath, 'words.csv');
+
+  if (fs.existsSync(dictionaryCsvPath)) {
+    fs.renameSync(dictionaryCsvPath, path.join(appdataPath, Date.now() + '_words.csv'));
+  }
+
+  fs.copyFileSync(filePath, dictionaryCsvPath);
+
+  dictionaryLoader(path.join(appdataPath, 'words.csv')).then(items => {
+    TRANSLATIONS = TRANSLATIONS || {};
+    for (let item of items) {
+      TRANSLATIONS[item['FROM']] = item['TO'];
+    }
+  })
 })
+
+ipcMain.on('words-download', (e) => {
+  const saveToPath = dialog.showSaveDialogSync(win, {
+    defaultPath: 'dictionary.csv',
+    filters: [
+      { name: 'Excel', extensions: [ 'csv' ]}
+    ]
+  })
+
+  if (!saveToPath) {
+    return;
+  }
+
+  fs.copyFileSync(path.join(appdataPath, 'words.csv'), saveToPath);
+});

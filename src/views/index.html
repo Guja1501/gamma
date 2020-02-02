@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Soza</title>
+    <title>Gamma Translator</title>
     <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
     <meta
       http-equiv="Content-Security-Policy"
@@ -230,7 +230,7 @@ span:last-child {
       </div>
       <div id="holder" class="fileholder">
           <span class="drag-folder-text">Drag your file here</span>
-          <label class="choose-file">Choose File<input type="file" style="display: none;"></label>
+          <label class="choose-file">Choose File<input type="file" accept=".csv" style="display: none;"></label>
       </div>
       <div class="menu">
           <ul>
@@ -249,21 +249,33 @@ span:last-child {
     </div>
 
     <script>
-      const {GoPage} = require('../../utils.js');
+      const { GoPage } = require('../../utils.js');
       const { ipcRenderer } = require('electron');
       const uploadContainer = document.querySelector('.upload-container');
+      const uploadInput = document.querySelector('.choose-file input');
+      const sendFile = files => {
+        if(!files.length) {
+          return;
+        }
+
+        ipcRenderer.send('translate-file', files[0].path);
+        uploadInput.value = null;
+      }
+
+      uploadInput.addEventListener('change', () => uploadInput.files.length && sendFile(uploadInput.files));
 
       let fileHolder = document.querySelector("#holder");
+
       fileHolder.addEventListener("drop", e => {
         e.preventDefault();
         e.stopPropagation();
 
         fileHolder.classList.remove("dragover");
         if(e.dataTransfer.files.length) {
-            const file = e.dataTransfer.files[0];
-            ipcRenderer.send('translate-file', file.path);
+          sendFile(e.dataTransfer.files);
         }
       });
+
       fileHolder.addEventListener("dragover", e => {
         e.preventDefault();
         e.stopPropagation();
