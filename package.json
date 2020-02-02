@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "electron .",
-    "pkg": "electron-packager . Gamma --platform=win32 --arch=ia32 --icon=resources/gamma.png --prune=true --out=dist --version-string.CompanyName=GC --version-string.FileDescription=GC --version-string.ProductName='Gamma Translator'"
+    "pkg": "electron-packager . Gamma --platform=win32 --arch=ia32 --icon=resources/gamma.png --prune=true --out=dist --version-string.CompanyName=GC --version-string.FileDescription=GC --version-string.ProductName='Gamma Translator'",
+    "wix": "node wix-msi.js"
   },
   "keywords": [],
   "author": "Guja Babunashvili <guja1501@gmail.com>",
