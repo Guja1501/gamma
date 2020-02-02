@@ -1,12 +1,13 @@
 {
   "name": "gamma",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Gamma Translator",
   "main": "index.js",
   "scripts": {
     "start": "electron .",
     "pkg": "electron-packager . Gamma --platform=win32 --arch=ia32 --icon=resources/gamma.png --prune=true --out=dist --version-string.CompanyName=GC --version-string.FileDescription=GC --version-string.ProductName='Gamma Translator'",
-    "wix": "node wix-msi.js"
+    "wix": "node wix-msi.js",
+    "build": "npm run pkg && npm run wix"
   },
   "keywords": [],
   "author": "Guja Babunashvili <guja1501@gmail.com>",
