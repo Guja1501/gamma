@@ -220,7 +220,39 @@ span {
 span:last-child {
   float: right;
 }
+#alert{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
+#alert .bg-alert {
+  padding: 30px 30px;
+  background: #F66;
+  color: #fff;
+  animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%, 50%, 70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%, 60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
     </style>
   </head>
   <body>
@@ -239,6 +271,14 @@ span:last-child {
       </div>
     </div>
 
+    <div id="alert" style="display: none;">
+      <div class="bg-alert">
+        <p>
+          File must be <b>.docx</b>
+        </p>
+      </div>
+    </div>
+
     <div id="container" class="progress-container" style="display: none;">
       <input type="checkbox" id="water"/>
       <label for="water" class="label">
@@ -249,16 +289,28 @@ span:last-child {
     </div>
 
     <script>
+      const path = require('path');
       const { GoPage } = require('../../utils.js');
       const { ipcRenderer } = require('electron');
       const uploadContainer = document.querySelector('.upload-container');
       const uploadInput = document.querySelector('.choose-file input');
+      const alertBox = document.querySelector('#alert');
+      const audioEffects = {
+        error: new Audio(path.join(__dirname, '../../resources/error.wav'))
+      }
       const sendFile = files => {
         if(!files.length) {
           return;
         }
+        
+        if(!files[0].name.endsWith('.docx')) {
+          alertBox.style.display = 'block';
+          audioEffects.error.play();
+          setTimeout(() => alertBox.style.display = 'none', 1200);
+        } else {
+          ipcRenderer.send('translate-file', files[0].path);
+        }
 
-        ipcRenderer.send('translate-file', files[0].path);
         uploadInput.value = null;
       }
 
