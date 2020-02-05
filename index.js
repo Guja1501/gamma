@@ -163,10 +163,12 @@ function translate(workingDir, cb) {
   const length = Object.keys(TRANSLATIONS).length;
   let response = fs.readFileSync(documentXmlPath);
   let content = response.toString();
+  let insensitive = s => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gmui');
   let i = 0;
+
   for (let key in TRANSLATIONS) {
     cb(key, TRANSLATIONS[key], ++i, length)
-    content = content.replace(key, TRANSLATIONS[key])
+    content = content.replace(insensitive(key), TRANSLATIONS[key])
   }
   fs.writeFileSync(documentXmlPath, content);
 }
