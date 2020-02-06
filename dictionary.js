@@ -1,16 +1,23 @@
 const fs = require('fs');
-const path = require('path');
-const neatCsv = require('neat-csv');
+const XLSX = require('xlsx');
 
 module.exports = async (csv) => {
-    const response = fs.readFileSync(csv);
-    const words = await neatCsv(response.toString(), ['1', '2', '3', '4', '5']);
-    for(let key in words) {
-        words[key] = {
-            FROM: words[key]['1'],
-            TO: words[key]['2'],
-        }
+    const workbook = XLSX.readFileSync(csv);
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    let startsFrom = 1;
+    while(!worksheet['A' + startsFrom]) {
+        startsFrom++;
     }
 
+    const words = [];
+
+    while(worksheet['A' + startsFrom]) {
+        words.push({
+            FROM: worksheet['A' + startsFrom].v,
+            TO: worksheet['B' + startsFrom].v
+        });
+        startsFrom++;
+    }
+    
     return words;
 }

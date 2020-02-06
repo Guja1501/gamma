@@ -213,7 +213,7 @@
       <div class="menu">
           <ul>
             <li><a onclick="GoPage('index')">Main</a></li>
-            <li><label>Change Words<input type="file" accept=".csv" class="change-words-input"></label></li>
+            <li><label>Change Words<input type="file" accept=".xlsx" class="change-words-input"></label></li>
             <li><a onclick="downloadWords()">Download</a></li>
           </ul>
       </div>
@@ -257,7 +257,6 @@
 
         ipcRenderer.send('words-save', lastSentFilePath);
       }
-
     </script>
   </body>
 </html>

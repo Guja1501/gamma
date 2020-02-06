@@ -16,9 +16,9 @@
   "dependencies": {
     "appdata-path": "^1.0.0",
     "archiver": "^3.1.1",
-    "neat-csv": "^5.1.0",
     "rimraf": "^3.0.1",
-    "unzipper": "^0.10.7"
+    "unzipper": "^0.10.7",
+    "xlsx": "^0.15.5"
   },
   "devDependencies": {
     "electron": "^7.1.10",

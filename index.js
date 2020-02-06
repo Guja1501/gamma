@@ -92,7 +92,7 @@ ipcMain.on('translate-file', (e, filePath) => {
   e.reply('progress-status', true);
 
   const ID = Math.random().toString(36).substr(2, 9);
-  const workingDir = path.join(appdataPath, ID)
+  const workingDir = path.join(tempFolder, ID)
 
   const stat = fs.statSync(filePath);
   let loaded = 0;
@@ -151,12 +151,19 @@ ipcMain.on('translate-file', (e, filePath) => {
 
 let TRANSLATIONS = {};
 
-dictionaryLoader(path.join(appdataPath, 'words.csv')).then(items => {
-  TRANSLATIONS = TRANSLATIONS || {};
-  for (let item of items) {
-    TRANSLATIONS[item['FROM']] = item['TO'];
++(wordsPath => {
+  if(!fs.existsSync(wordsPath)) {
+    return;
   }
-})
+
+  dictionaryLoader(wordsPath).then(items => {
+    TRANSLATIONS = TRANSLATIONS || {};
+    for (let item of items) {
+      TRANSLATIONS[item['FROM']] = item['TO'];
+    }
+  })
+})(path.join(appdataPath, 'words.xlsx'));
+
 
 function translate(workingDir, cb) {
   const documentXmlPath = path.join(workingDir, 'word', 'document.xml');
@@ -170,7 +177,7 @@ function translate(workingDir, cb) {
     cb(key, TRANSLATIONS[key], ++i, length)
     content = content.replace(insensitive(key), TRANSLATIONS[key])
   }
-  fs.writeFileSync(documentXmlPath, content);
+  fs.writeFileSync(documentXmlPath, content, 'utf8');
 }
 
 function zipDirectory(inputDir, outputFile) {
@@ -190,26 +197,26 @@ function zipDirectory(inputDir, outputFile) {
 ipcMain.on('words-request', e => e.reply('words-response', TRANSLATIONS));
 
 ipcMain.on('words-change', async (e, filePath) => {
-  let items = await dictionaryLoader(filePath);
   let words = {};
+  let items = await dictionaryLoader(filePath);
 
   for (let item of items) {
     words[item['FROM']] = item['TO'];
   }
-
+  
   e.reply('words-response', words, true);
 });
 
 ipcMain.on('words-save', (e, filePath) => {
-  let dictionaryCsvPath = path.join(appdataPath, 'words.csv');
+  let dictionaryPath = path.join(appdataPath, 'words.xlsx');
 
-  if (fs.existsSync(dictionaryCsvPath)) {
-    fs.renameSync(dictionaryCsvPath, path.join(appdataPath, Date.now() + '_words.csv'));
+  if (fs.existsSync(dictionaryPath)) {
+    fs.renameSync(dictionaryPath, path.join(appdataPath, Date.now() + '_words.xlsx'));
   }
 
-  fs.copyFileSync(filePath, dictionaryCsvPath);
+  fs.copyFileSync(filePath, dictionaryPath);
 
-  dictionaryLoader(path.join(appdataPath, 'words.csv')).then(items => {
+  dictionaryLoader(path.join(appdataPath, 'words.xlsx')).then(items => {
     TRANSLATIONS = TRANSLATIONS || {};
     for (let item of items) {
       TRANSLATIONS[item['FROM']] = item['TO'];
@@ -218,10 +225,22 @@ ipcMain.on('words-save', (e, filePath) => {
 })
 
 ipcMain.on('words-download', (e) => {
+  let wordsPath = path.join(appdataPath, 'words.xlsx');
+
+  if (!fs.existsSync(wordsPath)) {
+    dialog.showMessageBoxSync(win, {
+      type: 'error',
+      buttons: ['OK'],
+      title: 'Download Error',
+      message: 'Words is not configured yet.',
+    })
+    return;
+  }
+
   const saveToPath = dialog.showSaveDialogSync(win, {
-    defaultPath: 'dictionary.csv',
+    defaultPath: 'dictionary.xlsx',
     filters: [
-      { name: 'Excel', extensions: [ 'csv' ]}
+      { name: 'Excel', extensions: [ 'xlsx' ]}
     ]
   })
 
@@ -229,5 +248,5 @@ ipcMain.on('words-download', (e) => {
     return;
   }
 
-  fs.copyFileSync(path.join(appdataPath, 'words.csv'), saveToPath);
+  fs.copyFileSync(wordsPath, saveToPath);
 });
