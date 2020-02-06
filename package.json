@@ -1,6 +1,6 @@
 {
   "name": "gamma",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Gamma Translator",
   "main": "index.js",
   "scripts": {
