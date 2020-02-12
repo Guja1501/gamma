@@ -7,6 +7,7 @@ const rimraf = require('rimraf')
 const dictionaryLoader = require('./dictionary');
 const os = require('os');
 const getAppDataPath = require('appdata-path');
+const { execSync } = require('child_process');
 
 const appdataPath = getAppDataPath('gamma');
 const tempFolder = os.tmpdir();
@@ -142,7 +143,11 @@ ipcMain.on('translate-file', (e, filePath) => {
           saveToPath = saveToPath.trim('.') + '.docx';
         }
 
-        fs.renameSync(tmpFilePath, saveToPath);
+        if (process.platform === 'win32') {
+          execSync(`move "${tmpFilePath}" "${saveToPath}"`);
+        } else {
+          fs.renameSync(tmpFilePath, saveToPath);
+        }
       }
 
       e.reply('progress-status', false);
@@ -217,7 +222,7 @@ ipcMain.on('words-save', (e, filePath) => {
   fs.copyFileSync(filePath, dictionaryPath);
 
   dictionaryLoader(path.join(appdataPath, 'words.xlsx')).then(items => {
-    TRANSLATIONS = TRANSLATIONS || {};
+    TRANSLATIONS = {};
     for (let item of items) {
       TRANSLATIONS[item['FROM']] = item['TO'];
     }
