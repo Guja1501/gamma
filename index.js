@@ -175,12 +175,12 @@ function translate(workingDir, cb) {
   const length = Object.keys(TRANSLATIONS).length;
   let response = fs.readFileSync(documentXmlPath);
   let content = response.toString();
-  let insensitive = s => new RegExp('(?![^<>]*>)[^а-яА-Я]' + s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^а-яА-Я]', 'gmui');
+  let insensitive = s => new RegExp('(?![^<>]*>)([^а-яА-Я]|^)' + s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^а-яА-Я]|$)', 'gmui');
   let i = 0;
 
   for (let key in TRANSLATIONS) {
     cb(key, TRANSLATIONS[key], ++i, length)
-    content = content.replace(insensitive(key), TRANSLATIONS[key])
+    content = content.replace(insensitive(key), `$1${TRANSLATIONS[key]}$3`)
   }
   fs.writeFileSync(documentXmlPath, content, 'utf8');
 }
