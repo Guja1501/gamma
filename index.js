@@ -120,7 +120,7 @@ ipcMain.on('translate-file', (e, filePath) => {
           }
         })
       });
-      const tmpFilePath = path.join(appdataPath, ID + '.docx');
+      const tmpFilePath = path.join(tempFolder, ID + '.docx');
 
       e.reply('progress-change', {
         text: 'Generating DOCX',
@@ -144,7 +144,7 @@ ipcMain.on('translate-file', (e, filePath) => {
         }
 
         if (process.platform === 'win32') {
-          execSync(`move "${tmpFilePath}" "${saveToPath}"`);
+          setTimeout(() => execSync(`move "${tmpFilePath}" "${saveToPath}"`), 3000);
         } else {
           fs.renameSync(tmpFilePath, saveToPath);
         }
@@ -175,12 +175,18 @@ function translate(workingDir, cb) {
   const length = Object.keys(TRANSLATIONS).length;
   let response = fs.readFileSync(documentXmlPath);
   let content = response.toString();
-  let insensitive = s => new RegExp('(?![^<>]*>)([^а-яА-Я]|^)' + s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^а-яА-Я]|$)', 'gmui');
+  let insensitive = s => new RegExp('(?![^<>]*>)' + s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gmui');
   let i = 0;
+  let arr = [];
+  for(let key in TRANSLATIONS) {
+    arr.push(key);
+  }
+  arr.sort((a, b) => b.length - a.length)
+  fs.writeFileSync('debug.log', arr[0] + '\n' + arr[10])
 
-  for (let key in TRANSLATIONS) {
+  for (let key of arr) {
     cb(key, TRANSLATIONS[key], ++i, length)
-    content = content.replace(insensitive(key), `$1${TRANSLATIONS[key]}$3`)
+    content = content.replace(insensitive(key), TRANSLATIONS[key])
   }
   fs.writeFileSync(documentXmlPath, content, 'utf8');
 }
