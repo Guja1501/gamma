@@ -290,6 +290,8 @@ span:last-child {
     </div>
 
     <script>
+      document.head.querySelector('title').innerHTML += ' v' + require('../../package').version
+
       const path = require('path');
       const { GoPage } = require('../../utils.js');
       const { ipcRenderer } = require('electron');

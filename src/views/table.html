@@ -220,6 +220,8 @@
     </div>
 
     <script>
+      document.head.querySelector('title').innerHTML += ' v' + require('../../package').version
+      
       const {GoPage} = require('../../utils.js');
       const { ipcRenderer } = require('electron');
       const changeWordsInput = document.querySelector('.change-words-input');
